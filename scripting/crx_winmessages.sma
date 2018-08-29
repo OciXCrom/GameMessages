@@ -1,11 +1,12 @@
 #include <amxmodx>
 #include <amxmisc>
+#include <cromchat>
 
 #if AMXX_VERSION_NUM < 183
 	#include <dhudmessage>
 #endif
 
-#define PLUGIN_VERSION "2.1"
+#define PLUGIN_VERSION "2.2"
 #define SYM_SUBSTRING "%s"
 #define SYM_NEWLINE "%n"
 
@@ -33,7 +34,6 @@ enum
 #define TRIE_COLORS 2
 #define TRIE_AUDIO 3
 
-new g_iSayText
 new g_eCvars[Cvars]
 new Trie:g_eTries[4]
 
@@ -41,9 +41,8 @@ public plugin_init()
 {
 	register_plugin("Win Messages & Sounds", PLUGIN_VERSION, "OciXCrom")
 	register_cvar("WinMessages", PLUGIN_VERSION, FCVAR_SERVER|FCVAR_SPONLY|FCVAR_UNLOGGED)
-	register_message(get_user_msgid("TextMsg"), "msgTextMsg")
-	register_message(get_user_msgid("SendAudio"), "msgSendAudio")
-	g_iSayText = get_user_msgid("SayText")
+	register_message(get_user_msgid("TextMsg"), "OnTextMsg")
+	register_message(get_user_msgid("SendAudio"), "OnSendAudio")
 	
 	g_eCvars[CVAR_XPOS] = register_cvar("winmsg_hud_xpos", "-1.0")
 	g_eCvars[CVAR_YPOS] = register_cvar("winmsg_hud_ypos", "0.10")
@@ -59,7 +58,7 @@ public plugin_precache()
 	for(new i; i < sizeof(g_eTries); i++)
 		g_eTries[i] = TrieCreate()
 		
-	fileRead()
+	ReadFile()
 }
 
 public plugin_end()
@@ -68,11 +67,12 @@ public plugin_end()
 		TrieDestroy(g_eTries[i])
 }
 
-fileRead()
+ReadFile()
 {
-	new szConfigsName[256], szFilename[256]
-	get_configsdir(szConfigsName, charsmax(szConfigsName))
-	formatex(szFilename, charsmax(szFilename), "%s/WinMessages.ini", szConfigsName)
+	new szFilename[256]
+	get_configsdir(szFilename, charsmax(szFilename))
+	add(szFilename, charsmax(szFilename), "/WinMessages.ini")
+
 	new iFilePointer = fopen(szFilename, "rt")
 	
 	if(iFilePointer)
@@ -112,7 +112,7 @@ fileRead()
 					parse(szData, szMessage, charsmax(szMessage), szNewMessage, charsmax(szNewMessage))
 					TrieSetString(g_eTries[TRIE_AUDIO], szMessage, szNewMessage)
 					
-					if(!is_blank(szNewMessage))
+					if(szNewMessage[0])
 						precache_sound(szNewMessage)
 						
 					szNewMessage[0] = EOS
@@ -124,7 +124,7 @@ fileRead()
 	}
 }
 
-public msgTextMsg(iMessage, iDest, id)
+public OnTextMsg(iMessage, iDest, id)
 { 
 	static szMessage[64]
 	get_msg_arg_string(2, szMessage, charsmax(szMessage))
@@ -151,7 +151,7 @@ public msgTextMsg(iMessage, iDest, id)
 		
 		switch(iType)
 		{
-			case TYPE_CHAT: ColorChat(id, szNewMessage)
+			case TYPE_CHAT: CC_SendMessage(id, szNewMessage)
 			case TYPE_CENTER: client_print(id, print_center, szNewMessage)
 			case TYPE_HUD, TYPE_DHUD:
 			{
@@ -186,7 +186,7 @@ public msgTextMsg(iMessage, iDest, id)
 	return PLUGIN_CONTINUE
 }
 
-public msgSendAudio(MsgId, MsgDest, MsgEntity)
+public OnSendAudio(MsgId, MsgDest, MsgEntity)
 {
 	static szMessage[32]
 	get_msg_arg_string(2, szMessage, charsmax(szMessage))
@@ -196,7 +196,7 @@ public msgSendAudio(MsgId, MsgDest, MsgEntity)
 		new szNewMessage[128]
 		TrieGetString(g_eTries[TRIE_AUDIO], szMessage, szNewMessage, charsmax(szNewMessage))
 		
-		if(!is_blank(szNewMessage))
+		if(szNewMessage[0])
 			client_cmd(0, "spk %s", szNewMessage)
 			
 		return PLUGIN_HANDLED
@@ -204,36 +204,6 @@ public msgSendAudio(MsgId, MsgDest, MsgEntity)
 	
 	return PLUGIN_CONTINUE
 }
-
-bool:is_blank(szString[])
-	return szString[0] == EOS ? true : false
 	
 bool:is_random(szString[])
-	return szString[0] == 'R' ? true : false
-	
-ColorChat(const id, const szInput[], any:...)
-{
-	new iPlayers[32], iCount = 1
-	static szMessage[191]
-	vformat(szMessage, charsmax(szMessage), szInput, 3)
-	
-	replace_all(szMessage, charsmax(szMessage), "!g", "^4")
-	replace_all(szMessage, charsmax(szMessage), "!n", "^1")
-	replace_all(szMessage, charsmax(szMessage), "!t", "^3")
-	
-	if(id)
-		iPlayers[0] = id
-	else
-		get_players(iPlayers, iCount, "ch")
-	
-	for(new i; i < iCount; i++)
-	{
-		if(is_user_connected(iPlayers[i]))
-		{
-			message_begin(MSG_ONE_UNRELIABLE, g_iSayText, _, iPlayers[i])
-			write_byte(iPlayers[i])
-			write_string(szMessage)
-			message_end()
-		}
-	}
-}
+	return szString[0] == 'R'
