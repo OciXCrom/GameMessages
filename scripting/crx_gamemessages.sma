@@ -6,7 +6,7 @@
 	#include <dhudmessage>
 #endif
 
-new const PLUGIN_VERSION[] = "3.0"
+new const PLUGIN_VERSION[] = "3.0.1"
 new const Float:POS_DEFAULT = 9.99
 
 new const SYM_SUBSTRING[] = "%s"
@@ -146,23 +146,20 @@ ReadFile()
 				}
 				default:
 				{
-					if(g_iMessagesNum)
+					szFullColor[0] = EOS
+					szPosition[0] = EOS
+					eMessage[MSG_NEW][0] = EOS
+
+					for(i = 0; i < 3; i++)
 					{
-						szFullColor[0] = EOS
-						szPosition[0] = EOS
-						eMessage[MSG_NEW][0] = EOS
+						szColors[i][0] = EOS
+						eMessage[MSG_COLOR][i] = 0
+					}
 
-						for(i = 0; i < 3; i++)
-						{
-							szColors[i][0] = EOS
-							eMessage[MSG_COLOR][i] = 0
-						}
-
-						for(i = 0; i < 2; i++)
-						{
-							szCoordinates[i][0] = EOS
-							eMessage[MSG_POSITION][i] = _:POS_DEFAULT
-						}
+					for(i = 0; i < 2; i++)
+					{
+						szCoordinates[i][0] = EOS
+						eMessage[MSG_POSITION][i] = _:POS_DEFAULT
 					}
 
 					parse(szData, szMessage, charsmax(szMessage), eMessage[MSG_NEW], charsmax(eMessage[MSG_NEW]), szType, charsmax(szType), szFullColor, charsmax(szFullColor), szPosition, charsmax(szPosition))
