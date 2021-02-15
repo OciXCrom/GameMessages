@@ -6,7 +6,7 @@
 	#include <dhudmessage>
 #endif
 
-new const PLUGIN_VERSION[] = "3.0.1"
+new const PLUGIN_VERSION[] = "3.0.2"
 new const Float:POS_DEFAULT = 9.99
 
 new const SYM_SUBSTRING[] = "%s"
@@ -140,7 +140,7 @@ ReadFile()
 					TrieSetString(g_tSounds, szMessage, szSound)
 					
 					if(szSound[0])
-						precache_sound(szSound)
+						precache_generic(szSound)
 						
 					szSound[0] = EOS
 				}
